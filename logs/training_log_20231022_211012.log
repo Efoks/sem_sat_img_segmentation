@@ -1,0 +1,2 @@
+2023-10-22 21:10:12,381 - root - INFO - Hyperparameters Settings:
+2023-10-22 21:10:12,381 - root - INFO - Batch Size: 2; Number of Epochs: 1; Learning Rate: 0.1; Momentum: 0.9; Dampening: 0

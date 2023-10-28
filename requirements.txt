@@ -1,0 +1,5 @@
+numpy==1.26.0
+rasterio==1.2.10
+matplotlib==3.5.3
+patchify==0.2.3
+pillow==9.4.0
