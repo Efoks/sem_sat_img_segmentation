@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class MiniFranceDataset(Dataset):
-    def __init__(self, train_images_dir=config.TRAIN_IMAGE_DIR, train_maks=config.TRAIN_MASK_DIR, transform=None):
+    def __init__(self, train_images_dir=config.TRAIN_IMAGE_DIR, train_masks=config.TRAIN_MASK_DIR, transform=None):
         """
         Custom PyTorch dataset for MiniFrance images and masks.
 
@@ -46,9 +46,9 @@ class MiniFranceDataset(Dataset):
         """
 
         self.image_dir = train_images_dir
-        self.mask_dir = train_maks
+        self.mask_dir = train_masks
         self.image_files = os.listdir(train_images_dir)
-        self.trasformation = transform
+        self.transformation = transform
 
     def __len__(self):
         return len(self.image_files)
@@ -62,20 +62,25 @@ class MiniFranceDataset(Dataset):
 
         image = reshape_as_image(rasterio.open(image_path).read())
 
-        if self.trasformation:
-            image = self.trasformation(image)
+        if self.transformation:
+            image = self.transformation(image)
 
         if os.path.exists(mask_path):
-            mask = rasterio.open(mask_path).read()
-            mask = torch.from_numpy(mask)
+            mask = rasterio.open(mask_path).read(1)
+            mask = torch.from_numpy(mask).long()  # Convert numpy array to LongTensor
+
+            # Check if the mask contains valid class indices
+            if not torch.all((mask >= 0) & (mask < config.NUM_CLASSES)):
+                raise ValueError(f"Mask values must be between 0 and {config.NUM_CLASSES - 1}")
 
             # One hot encode to convert masks shape into [num_classes, size_x, size_y]
             # from [num_channels, size_x, size_y]
-            mask = F.one_hot(mask.squeeze(1), config.NUM_CLASSES)
-            mask = mask.permute(0, 3, 1, 2).float().squeeze(0)
+            mask = F.one_hot(mask, config.NUM_CLASSES)
+            mask = mask.permute(2, 0, 1).float()
         else:
             # Used for unsupervised data part
-            mask = torch.zeros_like(image)
+            # Create a zero mask with shape [num_classes, H, W]
+            mask = torch.zeros((config.NUM_CLASSES, image.shape[1], image.shape[2]), dtype=torch.float32)
 
         return image, mask
 
@@ -137,6 +142,6 @@ if __name__ == "__main__":
     supervised_loader, unsupervised_loader = create_data_loaders(batch_size, unsupervised_ratio)
 
     utils.plot_images_and_masks(supervised_loader, unsupervised_loader)
-    utils.plot_class_distribution(supervised_loader)
+    # utils.plot_class_distribution(supervised_loader)
 
 

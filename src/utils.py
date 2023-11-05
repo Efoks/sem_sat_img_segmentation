@@ -22,11 +22,11 @@ def plot_images_and_masks(supervised_loader, unsupervised_loader):
     fig.suptitle('Figure 3. Images and mask in the final dataset.', y=0.95)
     for i, (images, masks) in enumerate(supervised_loader):
         image = images[0].permute(1, 2, 0)
-        mask = masks[0].permute(1, 2, 0)
+        mask = torch.argmax(masks[0], dim=0)
 
         axes[0, 0].imshow(image)
         axes[0, 0].set_title("Supervised Image")
-        axes[0, 1].imshow(mask)
+        axes[0, 1].imshow(mask, cmap='tab20', aspect='equal')
         axes[0, 1].set_title("Supervised Mask")
         fig.delaxes(axes[1, 1])
         break
