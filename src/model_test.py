@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from model import prepare_model
+from models import prepare_model
 from checkpoints_utils import save_model_checkpoint, load_model_checkpoint
 from torch.utils.data import DataLoader, Dataset, TensorDataset
 from torchvision import transforms

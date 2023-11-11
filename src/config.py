@@ -2,12 +2,12 @@ import os
 import torch
 
 # Define paths to data directories
-ORIGINAL_DATA_DIR = 'D:/ann_data'
-DATA_DIR = "C:/Users/edvar/PycharmProjects/miniFrance_project/data"
-TRAIN_IMAGE_DIR = os.path.join(DATA_DIR, "train_images")
-TRAIN_MASK_DIR = os.path.join(DATA_DIR, "train_masks")
-# VAL_IMAGE_DIR = os.path.join(DATA_DIR, "val_images")
-# VAL_MASK_DIR = os.path.join(DATA_DIR, "val_masks")
+ORIGINAL_DATA_DIR = 'D:\\ann_data'
+DATA_DIR = "C:\\Users\\edvar\\PycharmProjects\\miniFrance_project\\data"
+SUPERVISED_TRAIN_IMAGE_DIR = os.path.join(DATA_DIR, "supervised_dataset", "supervised_images")
+TRAIN_MASK_DIR = os.path.join(DATA_DIR, "supervised_dataset", "masks")
+UNSUPERVISED_TRAIN_IMAGE_DIR = os.path.join(DATA_DIR, "unsupervised_dataset")
+
 
 # Define constants
 NUM_CLASSES = 16
@@ -50,7 +50,7 @@ MAX_IMAGES = 3_500
 
 
 # Define paths for model-related data
-MODEL_DATA_DIR = "C:/Users/edvar/PycharmProjects/miniFrance_project"
+MODEL_DATA_DIR = "C:\\Users\\edvar\\PycharmProjects\\miniFrance_project"
 CHECKPOINT_DIR = os.path.join(MODEL_DATA_DIR, "checkpoints")
 LOG_DIR = os.path.join(MODEL_DATA_DIR, "logs")
 

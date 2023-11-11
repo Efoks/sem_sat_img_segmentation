@@ -7,6 +7,7 @@ import config
 import rasterio
 from rasterio.plot import  reshape_as_image
 import torch.nn.functional as F
+from sklearn.model_selection import train_test_split
 import logging
 import utils
 
@@ -20,34 +21,17 @@ logger = logging.getLogger(__name__)
 
 
 class MiniFranceDataset(Dataset):
-    def __init__(self, train_images_dir=config.TRAIN_IMAGE_DIR, train_masks=config.TRAIN_MASK_DIR, transform=None):
-        """
-        Custom PyTorch dataset for MiniFrance images and masks.
+    def __init__(self, supervised_train_images_dir=config.SUPERVISED_TRAIN_IMAGE_DIR,
+                        train_masks_dir=config.TRAIN_MASK_DIR,
+                        unsupervised_train_images_dir=config.UNSUPERVISED_TRAIN_IMAGE_DIR,
+                        transform=None):
 
-        Parameters
-        ----------
-        train_images_dir : str, optional
-            Directory containing input images. Defaults to config.TRAIN_IMAGE_DIR.
-        train_masks : str, optional
-            Directory containing corresponding masks. Defaults to config.TRAIN_MASK_DIR.
-        transform : callable, optional
-            A transform to apply to the images.
+        self.sup_image_dir = supervised_train_images_dir
+        self.mask_dir = train_masks_dir
+        self.unsup_image_dir = unsupervised_train_images_dir
 
-        Attributes
-        ----------
-        image_dir : str
-            Directory containing input images.
-        mask_dir : str
-            Directory containing corresponding masks.
-        image_files : list
-            List of image file names.
-        transformation : callable
-            Transformation to apply to the images.
-        """
+        self.image_files = os.listdir(supervised_train_images_dir) + os.listdir(unsupervised_train_images_dir)
 
-        self.image_dir = train_images_dir
-        self.mask_dir = train_masks
-        self.image_files = os.listdir(train_images_dir)
         self.transformation = transform
 
     def __len__(self):
@@ -55,17 +39,18 @@ class MiniFranceDataset(Dataset):
 
     def __getitem__(self, idx):
         image_filename = self.image_files[idx]
-        image_path = os.path.join(self.image_dir,
-                                  image_filename)
-        mask_path = os.path.join(self.mask_dir,
-                                 f"mask_{os.path.splitext(image_filename)[0]}.tif")
 
-        image = reshape_as_image(rasterio.open(image_path).read())
+        if os.path.exists(os.path.join(self.sup_image_dir, image_filename)):
 
-        if self.transformation:
-            image = self.transformation(image)
+            image_path = os.path.join(self.sup_image_dir, image_filename)
+            mask_path = os.path.join(self.mask_dir,
+                                         f"mask_{os.path.splitext(image_filename)[0]}.tif")
 
-        if os.path.exists(mask_path):
+            image = reshape_as_image(rasterio.open(image_path).read())
+
+            if self.transformation:
+                image = self.transformation(image)
+
             mask = rasterio.open(mask_path).read(1)
             mask = torch.from_numpy(mask).long()  # Convert numpy array to LongTensor
 
@@ -77,32 +62,32 @@ class MiniFranceDataset(Dataset):
             # from [num_channels, size_x, size_y]
             mask = F.one_hot(mask, config.NUM_CLASSES)
             mask = mask.permute(2, 0, 1).float()
+
         else:
             # Used for unsupervised data part
-            # Create a zero mask with shape [num_classes, H, W]
-            mask = torch.zeros((config.NUM_CLASSES, image.shape[1], image.shape[2]), dtype=torch.float32)
+            image_path = os.path.join(self.unsup_image_dir, image_filename)
 
+            image = reshape_as_image(rasterio.open(image_path).read())
+
+            image = reshape_as_image(rasterio.open(image_path).read())
+
+            if self.transformation:
+                image = self.transformation(image)
+
+            mask = [] # For compatability with DataLoader (does not accept None)
         return image, mask
 
+def train_val_stratified_split(idx, mask_path = config.TRAIN_MASK_DIR):
+    class_frequencies = utils.calculate_class_frequencies(mask_path)
+    clusters = utils.cluster_images(class_frequencies)
+    X_train_idx, X_val_idx, _, _ = train_test_split(idx, idx, stratify=clusters)
+    return X_train_idx, X_val_idx
 
-def create_data_loaders(batch_size, unsupervised_ratio):
-    """
-    Create supervised and unsupervised data loaders for training.
+def train_val_split(idx):
+    X_train_idx, X_val_idx, _, _ = train_test_split(idx, idx)
+    return X_train_idx, X_val_idx
 
-    Parameters
-    ----------
-    batch_size : int
-        Batch size for both supervised and unsupervised data loaders.
-    unsupervised_ratio : float
-        Ratio of unsupervised samples to total samples.
-
-    Returns
-    -------
-    sup_loader : DataLoader
-        Supervised data loader.
-    unsup_loader : DataLoader
-        Unsupervised data loader.
-    """
+def create_data_loaders(batch_size, unsupervised_ratio, perform_stratiication = False):
 
     # Data normalization as defined in DeepLabV3 documentation
     data_transforms = transforms.Compose([
@@ -113,26 +98,40 @@ def create_data_loaders(batch_size, unsupervised_ratio):
     dataset = MiniFranceDataset(transform=data_transforms)
     size = len(dataset)
 
-    supervised_idx = [idx for idx in range(size) if os.path.exists(
-        os.path.join(dataset.mask_dir, f'mask_{os.path.splitext(dataset.image_files[idx])[0]}.tif'))]
+    supervised_idx = [i for i in range(os.listdir(config.SUPERVISED_TRAIN_IMAGE_DIR))]
+    unsupervised_idx = [i + len(supervised_idx) for i in range(os.listdir(config.UNSUPERVISED_TRAIN_IMAGE_DIR))]
 
-    # Used for checking which images have mask (used for supervised learning) vs
-    # images which do not have masks and will be used for unsupervised learning
-    unsupervised_idx = [idx for idx in range(size) if idx not in supervised_idx]
-    num_unsupervised_samples = int(unsupervised_ratio * len(unsupervised_idx))
+    if perform_stratiication:
+        train_supervised_idx, val_supervised_idx = train_val_stratified_split(supervised_idx)
+    else:
+        train_supervised_idx, val_supervised_idx = train_val_split(supervised_idx)
 
-    supervised_sampler = SubsetRandomSampler(supervised_idx)
-    unsupervised_sampler = SubsetRandomSampler(unsupervised_idx[:num_unsupervised_samples])
+    train_unsupervised_idx, val_unsupervised_idx = train_val_split(unsupervised_idx)
 
-    sup_loader = DataLoader(dataset,
+    supervised_sampler_train = SubsetRandomSampler(train_supervised_idx)
+    unsupervised_sampler_train = SubsetRandomSampler(train_unsupervised_idx)
+
+    supervised_sampler_val = SubsetRandomSampler(val_supervised_idx)
+    unsupervised_sampler_val = SubsetRandomSampler(val_unsupervised_idx)
+
+    sup_loader_train = DataLoader(dataset,
                             batch_size=batch_size,
-                            sampler=supervised_sampler)
+                            sampler=supervised_sampler_train)
 
-    unsup_loader = DataLoader(dataset,
+    sup_loader_val = DataLoader(dataset,
+                            batch_size=batch_size,
+                            sampler=supervised_sampler_val)
+
+    unsup_loader_train = DataLoader(dataset,
                               batch_size=batch_size,
-                              sampler=unsupervised_sampler)
+                              sampler=unsupervised_sampler_train)
 
-    return sup_loader, unsup_loader
+    unsup_loader_val = DataLoader(dataset,
+                              batch_size=batch_size,
+                              sampler=unsupervised_sampler_val)
+
+
+    return sup_loader_train, sup_loader_val, unsup_loader_train, unsup_loader_val
 
 
 if __name__ == "__main__":

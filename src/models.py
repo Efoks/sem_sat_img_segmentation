@@ -3,7 +3,7 @@ from torchvision.models.segmentation.deeplabv3 import DeepLabHead
 from config import pretrained_backbone, NUM_CLASSES, device
 
 
-def prepare_model(num_classes=NUM_CLASSES, device = device, pretrained_backbone = pretrained_backbone):
+def prepare_deeplabv3_resnet50(num_classes=NUM_CLASSES, device = device, pretrained_backbone = pretrained_backbone):
     """
     Prepare a DeepLabV3 model for semantic segmentation.
 

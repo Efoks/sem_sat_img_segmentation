@@ -1,6 +1,12 @@
 import torch
 import config
 import matplotlib.pyplot as plt
+import os
+import rasterio
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 
 def plot_images_and_masks(supervised_loader, unsupervised_loader):
     """
@@ -130,6 +136,21 @@ def evaluate_model(model, data_loader):
 
     mean_iou = torch.tensor(iou_score).mean().item()
     return mean_iou
+
+def calculate_class_frequencies(mask_path):
+    class_frequencies = []
+    for root, dirs, files in os.walk(mask_path):
+        for img in files:
+            mask = rasterio.open(os.path.join(mask_path, img)).read()
+            class_counts = np.bincount(mask.flatten(), minlength=16)
+            class_frequencies.append(class_counts)
+
+    return np.array(class_frequencies)
+
+def cluster_images(class_frequencies, n_clusters = 6):
+    kmeans = KMeans(n_clusters=n_clusters, random_state=42)
+    clusters = kmeans.fit_predict(class_frequencies)
+    return clusters
 
 
 
