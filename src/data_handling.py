@@ -21,6 +21,19 @@ logger = logging.getLogger(__name__)
 
 
 class MiniFranceDataset(Dataset):
+    """
+       Custom dataset class for handling the MiniFrance dataset, which includes supervised and unsupervised images.
+
+       Attributes:
+           sup_image_dir (str): Directory containing supervised training images.
+           mask_dir (str): Directory containing masks for supervised images.
+           unsup_image_dir (str): Directory containing unsupervised training images.
+           transformation (callable, optional): A function/transform that takes in an image and returns a transformed version.
+
+       Methods:
+           __len__: Returns the total number of images in the dataset.
+           __getitem__: Retrieves an image and its corresponding mask by index.
+    """
     def __init__(self, supervised_train_images_dir=config.SUPERVISED_TRAIN_IMAGE_DIR,
                         train_masks_dir=config.TRAIN_MASK_DIR,
                         unsupervised_train_images_dir=config.UNSUPERVISED_TRAIN_IMAGE_DIR,
@@ -38,6 +51,8 @@ class MiniFranceDataset(Dataset):
         return len(self.image_files)
 
     def __getitem__(self, idx):
+        # Retrieves an image by index, along with its mask if it's a supervised image
+
         image_filename = self.image_files[idx]
 
         if os.path.exists(os.path.join(self.sup_image_dir, image_filename)):
@@ -69,8 +84,6 @@ class MiniFranceDataset(Dataset):
 
             image = reshape_as_image(rasterio.open(image_path).read())
 
-            image = reshape_as_image(rasterio.open(image_path).read())
-
             if self.transformation:
                 image = self.transformation(image)
 
@@ -88,6 +101,17 @@ def train_val_split(idx):
     return X_train_idx, X_val_idx
 
 def create_data_loaders(batch_size, unsupervised_ratio, perform_stratiication = False):
+    """
+    Creates data loaders for the MiniFrance dataset.
+
+    Args:
+        batch_size (int): The size of each batch during training.
+        perform_stratiication (bool): Whether to stratify the dataset.
+
+    Returns:
+        Tuple[DataLoader, DataLoader, DataLoader, DataLoader]: Returns four data loaders -
+        two each for supervised and unsupervised data (training and validation).
+    """
 
     # Data normalization as defined in DeepLabV3 documentation
     data_transforms = transforms.Compose([
