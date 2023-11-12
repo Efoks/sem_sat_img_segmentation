@@ -3,12 +3,13 @@ import torch
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
+import config_test as config
 import rasterio
 from rasterio.plot import  reshape_as_image
 import torch.nn.functional as F
 from sklearn.model_selection import train_test_split
 import logging
-import src.config as config
+import utils_test as utils
 
 # Mean and standard deviation for image normalization, that are used for pretrained DeepLabV3
 mean = [0.485, 0.456, 0.406]
@@ -103,7 +104,7 @@ def train_val_split(idx):
     X_train_idx, X_val_idx, _, _ = train_test_split(idx, idx)
     return X_train_idx, X_val_idx
 
-def create_data_loaders(batch_size: object, unsupervised_ratio: object, perform_stratiication: object = False, show_cluster: object = False) -> object:
+def create_data_loaders(batch_size, unsupervised_ratio, perform_stratiication = False, show_cluster = False):
     """
     Creates data loaders for the MiniFrance dataset.
 

@@ -51,60 +51,30 @@ MAX_IMAGES = 3_500
 
 # Define paths for model-related data
 MODEL_DATA_DIR = "C:\\Users\\edvar\\PycharmProjects\\miniFrance_project"
-
 CHECKPOINT_DIR = os.path.join(MODEL_DATA_DIR, "checkpoints")
 LOG_DIR = os.path.join(MODEL_DATA_DIR, "logs")
-
-DEEPLABV3_RESNET50_LOG_DIR = os.path.join(LOG_DIR, 'deeplabv3_resnet50_logs')
-DEEPLABV3_RESNET50_STRATIFIED_LOG_DIR = os.path.join(LOG_DIR, 'deeplabv3_resnet50_stratified_logs')
-
-DEEPLABV3_RESNET101_LOG_DIR = os.path.join(LOG_DIR, 'deeplabv3_resnet101_logs')
-DEEPLABV3_RESNET101_STRATIFIED_LOG_DIR = os.path.join(LOG_DIR, 'deeplabv3_resnet101_stratified_logs')
-
-DEEPLABV3_MOBILENET_LOG_DIR = os.path.join(LOG_DIR, 'deeplabv3_mobilenet_logs')
-DEEPLABV3_MOBILENET_STRATIFIED_LOG_DIR = os.path.join(LOG_DIR, 'deeplabv3_mobilenet_stratified_logs')
 
 # Determine the device for PyTorch (CPU or GPU)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Define model input image size and model general parameters
-resnet50 = {'backbone': 'resnet50',
-            'pretrained_backbone': True,
-            'num_epochs': 50,
-            'batch_size': 2,
-            'image_size': (1000, 1000)}
-
-resnet101 = {'backbone': 'resnet101',
-            'pretrained_backbone': True,
-            'num_epochs': 50,
-            'batch_size': 2,
-            'image_size': (1000, 1000)}
-
-mobilenet = {'backbone': 'mobilenet_v3_large',
-            'pretrained_backbone': True,
-            'num_epochs': 50,
-            'batch_size': 2,
-            'image_size': (1000, 1000)}
+batch_size = 2
+image_size = (1000, 1000)
+backbone = 'resnet50'
+pretrained_backbone = True
 
 # Create directories for checkpoints and logs if they don't exist
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 os.makedirs(LOG_DIR, exist_ok=True)
 
-os.makedirs(DEEPLABV3_RESNET101_LOG_DIR, exist_ok=True)
-os.makedirs(DEEPLABV3_RESNET101_STRATIFIED_LOG_DIR, exist_ok=True)
-
-os.makedirs(DEEPLABV3_MOBILENET_LOG_DIR, exist_ok=True)
-os.makedirs(DEEPLABV3_MOBILENET_STRATIFIED_LOG_DIR, exist_ok=True)
-
 def print_config():
     """
     Print the configuration settings for the project.
     """
+
     print("Configuration:")
     print(f"Data Directory: {DATA_DIR}")
+    print(f"Image Size: {image_size}")
     print(f"Number of Classes: {NUM_CLASSES}")
+    print(f'Backbone: {backbone}, is pretrained? {pretrained_backbone}')
     print(f'Device for torch: {device}')
-
-def print_model_config(model_params):
-    for key in model_params:
-        print(f'Configuration: {key}, Value: {model_params[key]}')

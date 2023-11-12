@@ -1,5 +1,5 @@
 import torch
-import src.config as config
+import config_test as config
 import matplotlib.pyplot as plt
 import os
 import rasterio
@@ -7,8 +7,6 @@ import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
-from typing import Any
-from collections import namedtuple
 
 def plot_images_and_masks(supervised_loader, unsupervised_loader):
     """
@@ -171,39 +169,5 @@ def plot_cluster(class_frequencies, clusters):
 
     plt.show()
 
-class ModelWrapper(torch.nn.Module):
-    """
-    Wrapper class for model with dict/list rvalues.
-    """
-
-    def __init__(self, model: torch.nn.Module) -> None:
-        """
-        Init call.
-        """
-        super().__init__()
-        self.model = model
-
-    def forward(self, input_x: torch.Tensor) -> Any:
-        """
-        Wrap forward call.
-        """
-        data = self.model(input_x)
-
-        if isinstance(data, dict):
-            data_named_tuple = namedtuple("ModelEndpoints", sorted(data.keys()))  # type: ignore
-            data = data_named_tuple(**data)  # type: ignore
-
-        elif isinstance(data, list):
-            data = tuple(data)
-
-        return data
-def wrap_the_model(model):
-    return ModelWrapper(model)
-
-def calculate_accuracy(output, target):
-    _, predicted = torch.argmax(output, 1)
-    correct = (predicted == target).sum().item()
-    total = target.numel()
-    return correct / total
 
 
