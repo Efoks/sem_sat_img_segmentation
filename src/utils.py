@@ -200,10 +200,15 @@ class ModelWrapper(torch.nn.Module):
 def wrap_the_model(model):
     return ModelWrapper(model)
 
+def prepare_output_for_calculation(output, target):
+    _, predicted = torch.max(output, 1)
+    _, true_mask = torch.max(target, 1)
+    return predicted, true_mask
+
 def calculate_accuracy(output, target):
-    _, predicted = torch.argmax(output, 1)
-    correct = (predicted == target).sum().item()
-    total = target.numel()
+    predicted, true_mask = prepare_output_for_calculation(output, target)
+    correct = (predicted == true_mask).sum().item()
+    total = true_mask.numel()
     return correct / total
 
 

@@ -2,6 +2,7 @@ import torch
 import torchvision
 from torch import optim, nn
 from torch.utils.tensorboard import SummaryWriter
+import torchmetrics as metrics
 import src.config as config
 import src.utils as utils
 import src.data_handling as dh
@@ -14,8 +15,10 @@ config.print_model_config(config.resnet50)
 def launch_model():
 
     # num_epochs = config.resnet50['num_epochs']
-    num_epochs = 3
+    num_epochs = 2
     batch_size = config.resnet50['batch_size']
+    jaccard_metric = metrics.JaccardIndex(num_classes=config.NUM_CLASSES, task='multiclass').to('cuda')
+    dice_metric = metrics.Dice(num_classes=config.NUM_CLASSES).to('cuda')
 
     supervised_loader_train, supervised_loader_val, unsupervised_loader_train, unsupervised_loader_val = dh.create_data_loaders(batch_size, 0.5, perform_stratiication= False)
 
@@ -62,12 +65,28 @@ def launch_model():
                 total_loss += loss.item()
 
                 accuracy = utils.calculate_accuracy(output_prediction, mask)
-                total_accuracy += total_accuracy
+                total_accuracy += accuracy
+
+                predicted, true_mask = utils.prepare_output_for_calculation(output_prediction, mask)
+                jaccard_metric.update(predicted, true_mask)
+                dice_metric.update(predicted, true_mask)
 
         avg_loss = total_loss / len(supervised_loader_val)
         avg_accuracy = total_accuracy / len(supervised_loader_val)
-        writer.add_scalar('Validation Loss', avg_loss, epoch)
-        writer.add_scalar('Accuracy', avg_accuracy, epoch)
+        writer.add_scalar('Average Validation Loss', avg_loss, epoch)
+        writer.add_scalar('Average Accuracy in Validation', avg_accuracy, epoch)
+
+    jaccard_score = jaccard_metric.compute()
+    dice_score = dice_metric.compute()
+
+    score_table = f"""
+        | Metric | Score  | 
+        |----------|-----------|
+        | Jaccard Score    | {jaccard_score:.2f} |
+        | Dice Score    | {dice_score:.2f} |
+    """
+    score_table = '\n'.join(l.strip() for l in score_table.splitlines())
+    writer.add_text("Score Table", score_table, 0)
 
     writer.close()
 
