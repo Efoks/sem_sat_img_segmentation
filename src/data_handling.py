@@ -89,7 +89,7 @@ class MiniFranceDataset(Dataset):
             mask = [] # For compatability with DataLoader (does not accept None)
         return image, mask
 
-def train_val_stratified_split(idx, mask_path = config.TRAIN_MASK_DIR, show_cluster = False):
+def train_val_stratified_split(idx: object, mask_path: object = config.TRAIN_MASK_DIR, show_cluster: object = False) -> object:
     class_frequencies = utils.calculate_class_frequencies(mask_path)
     clusters = utils.cluster_images(class_frequencies)
 

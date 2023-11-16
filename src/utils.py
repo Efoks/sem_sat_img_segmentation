@@ -10,7 +10,7 @@ from sklearn.decomposition import PCA
 from typing import Any
 from collections import namedtuple
 
-def plot_images_and_masks(supervised_loader, unsupervised_loader):
+def plot_images_and_masks(supervised_loader: object, unsupervised_loader: object) -> object:
     """
     Plot supervised and unsupervised images and masks for visualization.
 
@@ -52,7 +52,7 @@ def plot_images_and_masks(supervised_loader, unsupervised_loader):
 
     plt.show()
 
-def plot_class_distribution(data_loader):
+def plot_class_distribution(data_loader: object) -> object:
     """
     Plot the class distribution by pixel share in the dataset.
 
@@ -86,7 +86,7 @@ def plot_class_distribution(data_loader):
 
     print(class_counter)
 
-def calculate_iou(pred_mask, true_mask):
+def calculate_iou(pred_mask: object, true_mask):
     """
     Calculate Intersection over Union (IoU) between predicted and true masks.
 
