@@ -7,6 +7,7 @@ import src.config as config
 import src.utils as utils
 import src.data_handling as dh
 from src.models import prepare_deeplabv3_resnet50
+import os
 
 torch.cuda.empty_cache()
 
@@ -14,8 +15,8 @@ config.print_model_config(config.resnet50)
 
 def launch_model():
 
-    # num_epochs = config.resnet50['num_epochs']
-    num_epochs = 2
+    num_epochs = config.resnet50['num_epochs']
+    # num_epochs = 2
     batch_size = config.resnet50['batch_size']
     jaccard_metric = metrics.JaccardIndex(num_classes=config.NUM_CLASSES, task='multiclass').to('cuda')
     dice_metric = metrics.Dice(num_classes=config.NUM_CLASSES).to('cuda')
@@ -34,7 +35,7 @@ def launch_model():
 
     trainable_parameters = filter(lambda p: p.requires_grad, model.parameters())
 
-    optimizer = optim.Adam(trainable_parameters)
+    optimizer = optim.Adam(trainable_parameters, lr=1e-4)
     criterion = nn.BCEWithLogitsLoss()
 
     for epoch in range(num_epochs):
@@ -78,6 +79,8 @@ def launch_model():
 
     jaccard_score = jaccard_metric.compute()
     dice_score = dice_metric.compute()
+
+    torch.save(model.state_dict(), os.path.join(config.DEEPLABV3_RESNET50_SAVE_DIR, 'deeplabv3_resnet50_state_dict.pth' ))
 
     score_table = f"""
         | Metric | Score  | 

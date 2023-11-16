@@ -8,6 +8,10 @@ SUPERVISED_TRAIN_IMAGE_DIR = os.path.join(DATA_DIR, "supervised_dataset", "super
 TRAIN_MASK_DIR = os.path.join(DATA_DIR, "supervised_dataset", "masks")
 UNSUPERVISED_TRAIN_IMAGE_DIR = os.path.join(DATA_DIR, "unsupervised_dataset")
 
+DATA_DIR_V2 = "C:\\Users\\edvar\\PycharmProjects\\miniFrance_project\\data_v2"
+SUPERVISED_TRAIN_IMAGE_DIR_V2 = os.path.join(DATA_DIR_V2, "supervised_dataset", "supervised_images")
+TRAIN_MASK_DIR_V2 = os.path.join(DATA_DIR_V2, "supervised_dataset", "masks")
+UNSUPERVISED_TRAIN_IMAGE_DIR_V2 = os.path.join(DATA_DIR_V2, "unsupervised_dataset")
 
 # Define constants
 NUM_CLASSES = 16
@@ -64,6 +68,14 @@ DEEPLABV3_RESNET101_STRATIFIED_LOG_DIR = os.path.join(LOG_DIR, 'deeplabv3_resnet
 DEEPLABV3_MOBILENET_LOG_DIR = os.path.join(LOG_DIR, 'deeplabv3_mobilenet_logs')
 DEEPLABV3_MOBILENET_STRATIFIED_LOG_DIR = os.path.join(LOG_DIR, 'deeplabv3_mobilenet_stratified_logs')
 
+SAVED_MODELS_DIR = os.path.join(MODEL_DATA_DIR, "saved_models")
+
+DEEPLABV3_RESNET50_SAVE_DIR = os.path.join(SAVED_MODELS_DIR, 'deeplabv3_resnet50_saves')
+
+DEEPLABV3_RESNET101_SAVE_DIR = os.path.join(SAVED_MODELS_DIR, 'deeplabv3_resnet101_saves')
+
+DEEPLABV3_MOBILENET_SAVE_DIR = os.path.join(SAVED_MODELS_DIR, 'deeplabv3_mobilenet_saves')
+
 # Determine the device for PyTorch (CPU or GPU)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -95,6 +107,12 @@ os.makedirs(DEEPLABV3_RESNET101_STRATIFIED_LOG_DIR, exist_ok=True)
 
 os.makedirs(DEEPLABV3_MOBILENET_LOG_DIR, exist_ok=True)
 os.makedirs(DEEPLABV3_MOBILENET_STRATIFIED_LOG_DIR, exist_ok=True)
+
+os.makedirs(DEEPLABV3_RESNET50_SAVE_DIR, exist_ok=True)
+
+os.makedirs(DEEPLABV3_RESNET101_SAVE_DIR, exist_ok=True)
+
+os.makedirs(DEEPLABV3_MOBILENET_SAVE_DIR, exist_ok=True)
 
 def print_config():
     """
