@@ -60,13 +60,12 @@ CHECKPOINT_DIR = os.path.join(MODEL_DATA_DIR, "checkpoints")
 LOG_DIR = os.path.join(MODEL_DATA_DIR, "logs")
 
 DEEPLABV3_RESNET50_LOG_DIR = os.path.join(LOG_DIR, 'deeplabv3_resnet50_logs')
-DEEPLABV3_RESNET50_STRATIFIED_LOG_DIR = os.path.join(LOG_DIR, 'deeplabv3_resnet50_stratified_logs')
 
 DEEPLABV3_RESNET101_LOG_DIR = os.path.join(LOG_DIR, 'deeplabv3_resnet101_logs')
-DEEPLABV3_RESNET101_STRATIFIED_LOG_DIR = os.path.join(LOG_DIR, 'deeplabv3_resnet101_stratified_logs')
 
 DEEPLABV3_MOBILENET_LOG_DIR = os.path.join(LOG_DIR, 'deeplabv3_mobilenet_logs')
-DEEPLABV3_MOBILENET_STRATIFIED_LOG_DIR = os.path.join(LOG_DIR, 'deeplabv3_mobilenet_stratified_logs')
+
+UNET_LOG_DIR = os.path.join(LOG_DIR, 'unet_logs')
 
 SAVED_MODELS_DIR = os.path.join(MODEL_DATA_DIR, "saved_models")
 
@@ -75,6 +74,8 @@ DEEPLABV3_RESNET50_SAVE_DIR = os.path.join(SAVED_MODELS_DIR, 'deeplabv3_resnet50
 DEEPLABV3_RESNET101_SAVE_DIR = os.path.join(SAVED_MODELS_DIR, 'deeplabv3_resnet101_saves')
 
 DEEPLABV3_MOBILENET_SAVE_DIR = os.path.join(SAVED_MODELS_DIR, 'deeplabv3_mobilenet_saves')
+
+UNET_SAVE_DIR = os.path.join(SAVED_MODELS_DIR, 'unet_saves')
 
 # Determine the device for PyTorch (CPU or GPU)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -98,21 +99,25 @@ mobilenet = {'backbone': 'mobilenet_v3_large',
             'batch_size': 2,
             'image_size': (1000, 1000)}
 
+unet = {'backbone': 'none',
+            'pretrained_backbone': False,
+            'num_epochs': 50,
+            'batch_size': 2,
+            'image_size': (1024, 1024)}
+
 # Create directories for checkpoints and logs if they don't exist
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 os.makedirs(LOG_DIR, exist_ok=True)
-
-os.makedirs(DEEPLABV3_RESNET101_LOG_DIR, exist_ok=True)
-os.makedirs(DEEPLABV3_RESNET101_STRATIFIED_LOG_DIR, exist_ok=True)
-
-os.makedirs(DEEPLABV3_MOBILENET_LOG_DIR, exist_ok=True)
-os.makedirs(DEEPLABV3_MOBILENET_STRATIFIED_LOG_DIR, exist_ok=True)
 
 os.makedirs(DEEPLABV3_RESNET50_SAVE_DIR, exist_ok=True)
 
 os.makedirs(DEEPLABV3_RESNET101_SAVE_DIR, exist_ok=True)
 
 os.makedirs(DEEPLABV3_MOBILENET_SAVE_DIR, exist_ok=True)
+
+os.makedirs(UNET_SAVE_DIR, exist_ok=True)
+
+os.makedirs(UNET_LOG_DIR, exist_ok=True)
 
 def print_config():
     """

@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from sklearn.model_selection import train_test_split
 import logging
 import src.config as config
+import src.utils as utils
 
 # Mean and standard deviation for image normalization, that are used for pretrained DeepLabV3
 mean = [0.485, 0.456, 0.406]
@@ -89,7 +90,7 @@ class MiniFranceDataset(Dataset):
             mask = [] # For compatability with DataLoader (does not accept None)
         return image, mask
 
-def train_val_stratified_split(idx: object, mask_path: object = config.TRAIN_MASK_DIR, show_cluster: object = False) -> object:
+def train_val_stratified_split(idx, mask_path = config.TRAIN_MASK_DIR, show_cluster = False):
     class_frequencies = utils.calculate_class_frequencies(mask_path)
     clusters = utils.cluster_images(class_frequencies)
 
@@ -103,9 +104,9 @@ def train_val_split(idx):
     X_train_idx, X_val_idx, _, _ = train_test_split(idx, idx)
     return X_train_idx, X_val_idx
 
-def create_data_loaders(batch_size: object, unsupervised_ratio: object, perform_stratiication: object = False, show_cluster: object = False) -> object:
+def create_data_loaders(batch_size, perform_stratiication = False, show_cluster = False, data_2 = False, model = 'deeplab'):
     """
-    Creates data loaders for the MiniFrance dataset.
+    Creates data loaders for the MiniFrance dataset for pre-trained DeepLab Models.
 
     Args:
         batch_size (int): The size of each batch during training.
@@ -115,21 +116,40 @@ def create_data_loaders(batch_size: object, unsupervised_ratio: object, perform_
         Tuple[DataLoader, DataLoader, DataLoader, DataLoader]: Returns four data loaders -
         two each for supervised and unsupervised data (training and validation).
     """
+    if model == 'deeplab':
+        # Data normalization as defined in DeepLabV3 documentation
+        data_transforms = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean, std)
+        ])
+    elif model == 'unet':
+        data_transforms = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Resize((1024, 1024))
+        ])
+    else:
+        print('No model was found')
 
-    # Data normalization as defined in DeepLabV3 documentation
-    data_transforms = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(mean, std)
-    ])
+    if data_2:
+        dataset = MiniFranceDataset(supervised_train_images_dir=config.SUPERVISED_TRAIN_IMAGE_DIR_V2,
+                                    train_masks_dir=config.TRAIN_MASK_DIR_V2,
+                                    unsupervised_train_images_dir=config.UNSUPERVISED_TRAIN_IMAGE_DIR_V2,
+                                    transform=data_transforms)
 
-    dataset = MiniFranceDataset(transform=data_transforms)
+        supervised_idx = [i for i in range(len(os.listdir(config.SUPERVISED_TRAIN_IMAGE_DIR_V2)))]
+        unsupervised_idx = [i + len(supervised_idx) for i in
+                            range(len(os.listdir(config.UNSUPERVISED_TRAIN_IMAGE_DIR_V2)))]
+    else:
+        dataset = MiniFranceDataset(transform=data_transforms)
+
+        supervised_idx = [i for i in range(len(os.listdir(config.SUPERVISED_TRAIN_IMAGE_DIR)))]
+        unsupervised_idx = [i + len(supervised_idx) for i in
+                            range(len(os.listdir(config.UNSUPERVISED_TRAIN_IMAGE_DIR)))]
+
     size = len(dataset)
 
-    supervised_idx = [i for i in range(len(os.listdir(config.SUPERVISED_TRAIN_IMAGE_DIR)))]
-    unsupervised_idx = [i + len(supervised_idx) for i in range(len(os.listdir(config.UNSUPERVISED_TRAIN_IMAGE_DIR)))]
-
     if perform_stratiication:
-        train_supervised_idx, val_supervised_idx = train_val_stratified_split(supervised_idx, show_cluster= show_cluster)
+        train_supervised_idx, val_supervised_idx = train_val_stratified_split(supervised_idx, show_cluster = show_cluster)
         print('Data clusterized and stratified')
     else:
         train_supervised_idx, val_supervised_idx = train_val_split(supervised_idx)
@@ -143,30 +163,38 @@ def create_data_loaders(batch_size: object, unsupervised_ratio: object, perform_
     unsupervised_sampler_val = SubsetRandomSampler(val_unsupervised_idx)
 
     sup_loader_train = DataLoader(dataset,
-                            batch_size=batch_size,
-                            sampler=supervised_sampler_train)
+                                batch_size=batch_size,
+                                sampler=supervised_sampler_train,
+                                drop_last=True)
 
     sup_loader_val = DataLoader(dataset,
-                            batch_size=batch_size,
-                            sampler=supervised_sampler_val)
+                                batch_size=batch_size,
+                                sampler=supervised_sampler_val,
+                                drop_last=True)
 
     unsup_loader_train = DataLoader(dataset,
-                              batch_size=batch_size,
-                              sampler=unsupervised_sampler_train)
+                                  batch_size=batch_size,
+                                  sampler=unsupervised_sampler_train,
+                                  drop_last=True)
 
     unsup_loader_val = DataLoader(dataset,
-                              batch_size=batch_size,
-                              sampler=unsupervised_sampler_val)
+                                  batch_size=batch_size,
+                                  sampler=unsupervised_sampler_val,
+                                  drop_last=True)
 
 
     return sup_loader_train, sup_loader_val, unsup_loader_train, unsup_loader_val
+
+
 
 
 if __name__ == "__main__":
     batch_size = 2
     unsupervised_ratio = 0.5
 
-    supervised_loader, _, unsupervised_loader, _ = create_data_loaders(batch_size, unsupervised_ratio, perform_stratiication=True, show_cluster=True)
+    supervised_loader, _, unsupervised_loader, _ = create_data_loaders(batch_size,
+                                                                               perform_stratiication=True,
+                                                                               show_cluster=True)
 
     utils.plot_images_and_masks(supervised_loader, unsupervised_loader)
     # utils.plot_class_distribution(supervised_loader)

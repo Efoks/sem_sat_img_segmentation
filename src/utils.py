@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import src.config as config
 import matplotlib.pyplot as plt
 import os
@@ -9,6 +10,7 @@ from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from typing import Any
 from collections import namedtuple
+import math
 
 def plot_images_and_masks(supervised_loader: object, unsupervised_loader: object) -> object:
     """
@@ -162,7 +164,7 @@ def plot_cluster(class_frequencies, clusters):
     class_frequencies_pca = pca.fit_transform(np.array(class_frequencies))
 
     fig, axes = plt.subplots(2, figsize=(10, 10))
-    fig.suptitle('Figure 4. Clusters of Images', y=0.95)
+    fig.suptitle('Figure 4. Clusters of Images', y=0.05)
 
     axes[0].scatter(class_frequencies_tsne[:, 0], class_frequencies_tsne[:, 1], c=clusters, cmap='viridis', alpha=0.6)
     axes[0].set_title("t-SNE Clusters")
@@ -170,6 +172,27 @@ def plot_cluster(class_frequencies, clusters):
     axes[1].set_title("PCA Clusters")
 
     plt.show()
+
+class TverskyLoss(nn.Module):
+    def __init__(self, alpha=0.5, beta=0.5, smooth=1e-6):
+        super(TverskyLoss, self).__init__()
+        self.alpha = alpha
+        self.beta = beta
+        self.smooth = smooth
+
+    def forward(self, preds, labels):
+        preds = torch.sigmoid(preds)
+        preds = preds.view(-1)
+        labels = labels.view(-1)
+
+        # True Positives, False Positives & False Negatives
+        TP = (preds * labels).sum()
+        FP = ((1 - labels) * preds).sum()
+        FN = (labels * (1 - preds)).sum()
+
+        Tversky_index = (TP + self.smooth) / (TP + self.alpha * FP + self.beta * FN + self.smooth)
+
+        return 1 - Tversky_index
 
 class ModelWrapper(torch.nn.Module):
     """
@@ -210,5 +233,31 @@ def calculate_accuracy(output, target):
     correct = (predicted == true_mask).sum().item()
     total = true_mask.numel()
     return correct / total
+
+def create_experiment_dir(exp_name,  model_name, logs_dir = config.LOG_DIR):
+    experiment_path = os.path.join(logs_dir, model_name + '_logs', model_name + exp_name)
+    os.makedirs(experiment_path, exist_ok=True)
+
+    return experiment_path
+
+def smooth(scalars: list[float], weight: float) -> list[float]:
+    """
+    EMA implementation according to
+    https://github.com/tensorflow/tensorboard/blob/34877f15153e1a2087316b9952c931807a122aa7/tensorboard/components/vz_line_chart2/line-chart.ts#L699
+    """
+    last = 0
+    smoothed = []
+    num_acc = 0
+    for next_val in scalars:
+        last = last * weight + (1 - weight) * next_val
+        num_acc += 1
+        # de-bias
+        debias_weight = 1
+        if weight != 1:
+            debias_weight = 1 - math.pow(weight, num_acc)
+        smoothed_val = last / debias_weight
+        smoothed.append(smoothed_val)
+
+    return smoothed
 
 

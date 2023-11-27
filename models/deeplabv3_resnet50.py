@@ -15,17 +15,28 @@ config.print_model_config(config.resnet50)
 
 def launch_model():
 
+    experiment = '_exp_tversky_loss_data_v2'
+
     num_epochs = config.resnet50['num_epochs']
     # num_epochs = 2
     batch_size = config.resnet50['batch_size']
-    jaccard_metric = metrics.JaccardIndex(num_classes=config.NUM_CLASSES, task='multiclass').to('cuda')
+    jaccard_metric = metrics.JaccardIndex(num_classes=config.NUM_CLASSES,
+                                          task='multiclass').to('cuda')
     dice_metric = metrics.Dice(num_classes=config.NUM_CLASSES).to('cuda')
 
-    supervised_loader_train, supervised_loader_val, unsupervised_loader_train, unsupervised_loader_val = dh.create_data_loaders(batch_size, 0.5, perform_stratiication= False)
+    (supervised_loader_train,
+     supervised_loader_val,
+     unsupervised_loader_train,
+     unsupervised_loader_val) = dh.create_data_loaders(batch_size = batch_size,
+                                                               perform_stratiication= False,
+                                                               data_2=True)
 
     model = prepare_deeplabv3_resnet50()
 
-    writer = SummaryWriter(config.DEEPLABV3_RESNET50_LOG_DIR)
+    experiment_dir = utils.create_experiment_dir(exp_name=experiment,
+                                                 model_name='deeplabv3_' + config.resnet50['backbone'])
+
+    writer = SummaryWriter(experiment_dir)
 
     model_wrapper = utils.wrap_the_model(model)
     sample_data = next(iter(supervised_loader_train))[0].to('cuda')
@@ -36,7 +47,7 @@ def launch_model():
     trainable_parameters = filter(lambda p: p.requires_grad, model.parameters())
 
     optimizer = optim.Adam(trainable_parameters, lr=1e-4)
-    criterion = nn.BCEWithLogitsLoss()
+    criterion = utils.TverskyLoss()
 
     for epoch in range(num_epochs):
         print(f'Started {epoch+1} epoch')
@@ -80,7 +91,8 @@ def launch_model():
     jaccard_score = jaccard_metric.compute()
     dice_score = dice_metric.compute()
 
-    torch.save(model.state_dict(), os.path.join(config.DEEPLABV3_RESNET50_SAVE_DIR, 'deeplabv3_resnet50_state_dict.pth' ))
+    torch.save(model.state_dict(), os.path.join(config.DEEPLABV3_RESNET50_SAVE_DIR,
+                                                f'deeplabv3_{config.resnet50["backbone"]}_{experiment}_state_dict.pth'))
 
     score_table = f"""
         | Metric | Score  | 
